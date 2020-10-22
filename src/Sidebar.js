@@ -10,7 +10,30 @@ import { Avatar } from '@material-ui/core';
 import MicIcon from '@material-ui/icons/Mic';
 import HeadsetIcon from '@material-ui/icons/Headset';
 import SettingsIcon from '@material-ui/icons/Settings';
+import { useSelector } from 'react-redux';
+import { selectUser } from './features/userSlice';
+import db, { auth } from './firebase';
+import { useState } from 'react';
+import { useEffect } from 'react';
+
 function Sidebar() {
+    const user = useSelector(selectUser)
+    const [channels, setChannels] = useState([])
+    useEffect(() => {
+        db.collection('channels').onSnapshot((snapshot) =>
+            setChannels(snapshot.docs.map((doc) => ({
+                id: doc.id,
+                channel: doc.data(),
+            })))
+        )
+    }, [])
+
+    const handleAddChannel = () => {
+        const channelName = prompt("Enter a new channel name")
+        db.collection('channels').add({
+            channelName: channelName
+        })
+    }
     return (
         <div className="sidebar">
             <div className="sidebar__top">
@@ -23,10 +46,14 @@ function Sidebar() {
                         <ExpandMoreIcon />
                         <h4>Text Channels</h4>
                     </div>
-                    <AddIcon className="sidebar__addChannel" />
+                    <AddIcon className="sidebar__addChannel" onClick={handleAddChannel} />
                 </div>
                 <div className="sidebar__channelsList">
-                    <SidebarChannel channel="Youtube" />
+                    {
+                        channels.map(({ id, channel }) => (
+                            <SidebarChannel key={id} id={id} channel={channel.channelName} />
+                        ))
+                    }
                 </div>
             </div>
             <div className="sidebar__voice">
@@ -41,10 +68,10 @@ function Sidebar() {
                 </div>
             </div>
             <div className="sidebar__profile">
-                <Avatar src="https://scontent.fbne6-1.fna.fbcdn.net/v/t1.0-9/121676908_10218038132853648_2179543139695462681_n.jpg?_nc_cat=104&_nc_sid=09cbfe&_nc_ohc=WLKfVLc2SYsAX80IUEs&_nc_ht=scontent.fbne6-1.fna&oh=15216e327a4c05f9fdaa133b466620fe&oe=5FB5FFC9" />
+                <Avatar onClick={() => auth.signOut()} src={user.photo} />
                 <div className="sidebar__profileInfo">
-                    <h3>@andoan</h3>
-                    <p>#thisIsMyID</p>
+                    <h3>{user.displayName}</h3>
+                    <p>#{user.uid.substring(0, 5)}</p>
                 </div>
                 <div className="sidebar__profileIcons">
                     <MicIcon />
